@@ -1,0 +1,20 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>mdar admin</title>
+<style>body{font:15px/1.5 system-ui,sans-serif;margin:0;padding:16px;background:#faf6f3;color:#1d0f12;max-width:760px;margin:auto}h1{font-size:22px}input,select,button{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid #ddc9c4}button{background:#e5303f;color:#fff;border:0;cursor:pointer}.c{background:#fff;border:1px solid #ecdcd8;border-radius:14px;padding:14px;margin:12px 0}.c b{font-size:16px}.m{color:#7a666a;font-size:13px}</style></head>
+<body><h1>mdar orders</h1><input id="tk" type="password" placeholder="Admin password"> <button id="go">Load orders</button><p class="m" id="msg"></p><div id="out"></div>
+<script>
+var tk=document.getElementById("tk"),out=document.getElementById("out"),msg=document.getElementById("msg");
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+function H(){return{"x-admin-token":tk.value,"Content-Type":"application/json"}}
+function load(){fetch("/api/admin/orders",{headers:H()}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(l){
+out.textContent="";msg.textContent=l.length+" orders";
+l.forEach(function(o){var c=el("div","c"),cu=o.customer||{};
+c.appendChild(el("b",null,o.id+" · $"+o.total));
+c.appendChild(el("div","m",new Date(o.createdAt).toLocaleString()+" · pays by "+(o.pay||"?")));
+c.appendChild(el("div",null,cu.name+" · "+cu.phone+(cu.email?" · "+cu.email:"")));
+c.appendChild(el("div",null,cu.address));
+(o.items||[]).forEach(function(i){c.appendChild(el("div",null,i.qty+" × "+i.name+" ($"+i.price+")"))});
+var s=el("select");["new","paid","confirmed","shipped","delivered","cancelled"].forEach(function(v){var op=el("option",null,v);op.value=v;if(v===o.status)op.selected=true;s.appendChild(op)});
+s.onchange=function(){fetch("/api/admin/orders/"+o.id,{method:"PATCH",headers:H(),body:JSON.stringify({status:s.value})}).then(function(r){msg.textContent=r.ok?"Saved":"Could not save"})};
+c.appendChild(s);out.appendChild(c)})}).catch(function(){msg.textContent="Wrong password or server error"})}
+document.getElementById("go").onclick=load;
+</script></body></html>
